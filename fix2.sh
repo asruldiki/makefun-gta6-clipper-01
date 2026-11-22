@@ -12,8 +12,12 @@ BASE="split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,c
 F=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
 HOOK=",drawtext=fontfile=$F:textfile=entry/txt/hook1.txt:fontcolor=white:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=300:enable='lt(t,3)',drawtext=fontfile=$F:textfile=entry/txt/hook2.txt:fontcolor=yellow:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=420:enable='lt(t,3)'"
 log(){ echo "[$(date +%H:%M:%S)] $*"; }
+if [ -s segA.mp4 ] && [ segA.mp4 -nt cut.sh ]; then
+  log "reuse A"
+else
 log "cut A"
 ffmpeg -nostdin -y -ss 1435 -to 1444 -i "$S" -filter_complex "[0:v]$BASE$HOOK" -c:v libx264 -preset veryfast -crf 20 -r 30 -pix_fmt yuv420p -c:a aac -ar 48000 -ac 2 segA.mp4 -loglevel error || exit 1
+fi
 log "cut B"
 ffmpeg -nostdin -y -ss 1452 -to 1478 -i "$S" -filter_complex "[0:v]$BASE" -c:v libx264 -preset veryfast -crf 20 -r 30 -pix_fmt yuv420p -c:a aac -ar 48000 -ac 2 segB.mp4 -loglevel error || exit 1
 log "card"
