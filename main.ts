@@ -1,65 +1,60 @@
-// make.fun gta6-clipper-01 entry program.
-// Deterministic: no network, no wall clock, stdlib only.
-// Copies VIDEO.json from the bot dir to the output dir after validating the URL.
-const fs = require('node:fs');
-const path = require('node:path');
+// make.fun gta6-clipper-01 entry: copy VIDEO.json to output after URL check.
+// Deterministic, Node stdlib only, no network and no wall clock.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-function dirFromEnv(name: string, fallback: string): string {
-  const raw = process.env[name];
-  const trimmed = typeof raw === 'string' ? raw.trim() : '';
-  return trimmed.length > 0 ? trimmed : fallback;
-}
-
-function isYouTubeUrl(value: unknown): boolean {
-  if (typeof value !== 'string' || value.length === 0) return false;
-  let parsed: URL;
-  try {
-    parsed = new URL(value);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-  const host = parsed.hostname.toLowerCase();
-  return host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtu.be' || host === 'www.youtu.be';
+function envDir(name: string, fallback: string): string {
+  const v = (process.env[name] ?? "").trim();
+  return v === "" ? fallback : v;
 }
 
 function main(): number {
-  const botDir = dirFromEnv('MAKEFUN_BOT_DIR', '/bot');
-  const outDir = dirFromEnv('MAKEFUN_OUTPUT_DIR', '/output');
-  const src = path.join(botDir, 'VIDEO.json');
+  const botDir = envDir("MAKEFUN_BOT_DIR", "/bot");
+  const outDir = envDir("MAKEFUN_OUTPUT_DIR", "/output");
+  const src = join(botDir, "VIDEO.json");
 
   let text: string;
   try {
-    text = fs.readFileSync(src, 'utf8');
-  } catch (err) {
-    process.stderr.write(`cannot read ${src}: ${(err as Error).message}\n`);
+    text = readFileSync(src, "utf8");
+  } catch (e) {
+    console.error(`cannot read ${src}: ${(e as Error).message}`);
     return 1;
   }
 
   let data: unknown;
   try {
     data = JSON.parse(text);
-  } catch (err) {
-    process.stderr.write(`VIDEO.json is not valid JSON: ${(err as Error).message}\n`);
+  } catch (e) {
+    console.error(`invalid JSON: ${(e as Error).message}`);
+    return 1;
+  }
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    console.error("VIDEO.json must be a JSON object");
     return 1;
   }
 
-  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-    process.stderr.write('VIDEO.json must be a JSON object\n');
+  const rawUrl = (data as Record<string, unknown>).url;
+  const url = typeof rawUrl === "string" ? rawUrl.trim() : "";
+  let ok = false;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    const webOk = u.protocol === "https:" || u.protocol === "http:";
+    const hostOk = host === "youtube.com" || host.endsWith(".youtube.com") ||
+      host === "youtu.be" || host.endsWith(".youtu.be");
+    ok = webOk && hostOk;
+  } catch {
+    ok = false;
+  }
+  if (!ok) {
+    console.error(`url is not a youtube.com or youtu.be address: ${url}`);
     return 1;
   }
 
-  const url = (data as { url?: unknown }).url;
-  if (!isYouTubeUrl(url)) {
-    process.stderr.write(`VIDEO.json url must be a youtube.com or youtu.be address, got: ${String(url)}\n`);
-    return 1;
-  }
-
-  fs.mkdirSync(outDir, { recursive: true });
-  const dest = path.join(outDir, 'VIDEO.json');
-  // Re-serialize deterministically (2-space, trailing newline).
-  fs.writeFileSync(dest, JSON.stringify(data, null, 2) + '\n', 'utf8');
-  process.stdout.write(`wrote ${dest} -> ${String(url)}\n`);
+  mkdirSync(outDir, { recursive: true });
+  const dest = join(outDir, "VIDEO.json");
+  writeFileSync(dest, JSON.stringify(data, null, 2) + "\n", "utf8");
+  console.log(`wrote ${dest} (${url})`);
   return 0;
 }
 
