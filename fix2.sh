@@ -10,7 +10,7 @@ printf "%s\n" "iShowSpeed's FIRST GTA 6 Gunfight is CHAOS 😱 #GTA6 #Shorts" > 
 S=footage/speed-first-time.webm
 BASE="split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=30[b];[fg]scale=1080:-2[f];[b][f]overlay=(W-w)/2:(H-h)/2"
 F=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
-HOOK=",drawtext=fontfile=$F:textfile=entry/txt/hook1.txt:fontcolor=white:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=300:enable='lt(t,3)',drawtext=fontfile=$F:textfile=entry/txt/hook2.txt:fontcolor=yellow:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=420:enable='lt(t,3)'"
+HOOK=",drawtext=fontfile=$F:textfile=txt/hook1.txt:fontcolor=white:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=300:enable='lt(t,3)',drawtext=fontfile=$F:textfile=txt/hook2.txt:fontcolor=yellow:fontsize=84:borderw=5:bordercolor=black:x=(w-tw)/2:y=420:enable='lt(t,3)'"
 log(){ echo "[$(date +%H:%M:%S)] $*"; }
 if [ -s segA.mp4 ] && [ segA.mp4 -nt cut.sh ]; then
   log "reuse A"
